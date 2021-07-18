@@ -33,6 +33,9 @@ class parsers:
     snippet_template_tag = Literal("{snippet}")
     template = snippet_template_tag
 
+    class markdown_render:
+        code_fence = Literal("```") + SkipTo("```")
+
 
 
 
@@ -87,3 +90,14 @@ def main(ctx,verbose,compiler_command,run,exec_name,template):
 
 
 
+@click.command()
+@click.option("--verbose","-v",is_flag=True,help="Print verbose messages.")
+@click.argument("markdown-file")
+@click.pass_context
+def markdown_render(ctx,verbose,markdown_file):
+    markdown_file = pathlib.Path(markdown_file)
+
+
+    markdown_text = markdown_file.read_text()
+    print(markdown_text)
+    print(parsers.markdown_render.code_fence.searchString(markdown_text))

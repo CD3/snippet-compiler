@@ -1,8 +1,7 @@
 # Example 1
 
 The class "Hello World" program written in C++:
-[comment]: <> (Example 1 Input)
-[comment]: <> (Example 1 snippet-compiler.compiler-command)
+[comment]: <> (Example 1 input)
 ```cpp
 #include<iostream>
 int main()
@@ -12,6 +11,7 @@ int main()
 ```
 
 Which, when ran, will produce the output
-[comment]: <> (Example 1 Output)
+[comment]: <> (Example 1 output)
 ```
 ```
+

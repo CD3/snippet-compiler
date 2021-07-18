@@ -17,5 +17,6 @@ setup(
   entry_points='''
   [console_scripts]
   snippet-compiler=snippetcompiler.cli:main
+  snippet-compiler-markdown-render=snippetcompiler.cli:markdown_render
   ''',
 )
