@@ -1,7 +1,8 @@
 # snippet-compiler
 
 snippet-compiler is a simple command line tool for compiling snippets of code (i.e. C and C++).
-It is useful for quickly compiling some code and optionally running the resulting executable.
+It is useful for quickly compiling some code and optionally running the resulting executable. I
+mainly wrote it to be used with [vim-snippet-compiler](https://github.com/CD3/vim-snippet-compiler).
 
 ## Install
 
@@ -31,7 +32,7 @@ To run the executable after compiling, pass the `--run` option.
 $ echo -n '#include<iostream>\nint main(){std::cout << "hello world" << std::endl; return 0;}' | snippet-compiler --run
 hello world
 ```
-To change the compiler command, pass a Python template string to `--compiler-comand`
+To change the compiler command, pass a Python template string to `--compiler-command`
 ```bash
 echo -n "#include <concepts>\nint main(){}" | snippet-compiler
 main.cpp:1:10: fatal error: concepts: No such file or directory
@@ -42,6 +43,3 @@ $
 $ echo -n "#include <concepts>\nint main(){}" | snippet-compiler --compiler-command 'gcc-10 -std=c++20 {file}'
 ```
 The `{file}` tag is required to tell the compiler where the name of the temporary file should go in the command line.
-
-
-
