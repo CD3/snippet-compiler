@@ -10,7 +10,7 @@ mainly wrote it to be used with [vim-snippet-compiler](https://github.com/CD3/vi
 $ pip install snippet-compiler
 ```
 
-## using
+## Using
 
 The `snippet-compiler` command reads source code from standard input, saves it to a temporary file, and invokes a compiler on it.
 ```bash
