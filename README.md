@@ -43,3 +43,19 @@ $
 $ echo -n "#include <concepts>\nint main(){}" | snippet-compiler --compiler-command 'gcc-10 -std=c++20 {file}'
 ```
 The `{file}` tag is required to tell the compiler where the name of the temporary file should go in the command line.
+
+By default, only the snippet text will be included in the source file. You can also specify a template file to use
+```cpp
+// my-snippet-template.cpp
+#include<iostream>
+int main()
+{
+  {snippet}
+  return 0;
+}
+```
+The string `{snippet}` in the template will be replaced with the code snippet before compiling.
+```bash
+$ echo -n 'std::cout << "hello world" << std::endl;' | snippet-compiler --run
+hello world
+```
