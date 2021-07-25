@@ -59,3 +59,106 @@ The string `{snippet}` in the template will be replaced with the code snippet be
 $ echo -n 'std::cout << "hello world" << std::endl;' | snippet-compiler --run
 hello world
 ```
+
+## Other Commands
+
+The `snippet-compiler` package now includes some other commands for working with snippets.
+
+`snippet-compiler-markdown-render` is a command that will read a markdown file, look for code snippets (identified by a control block), compile the snippets using `snippet-compiler`,
+and insert the output into the document. Here's an example:
+````
+To write a hello world program in C++, we will need to include the `iostream` header
+<!---
+tag: example-1
+-->
+```cpp
+#include<iostream>
+int main()
+{
+  cout << "Hello World!\n";
+}
+```
+However, when we try to compile this, we will get an error
+<!---
+tag: example-1
+-->
+```bash
+this code fence will be replaced
+with the compiler output of the above example.
+```
+This is because the `cout` object is in the `std::` namespace, which is easy to forget.
+<!---
+tag: example-2
+snippet-compiler:
+  flags:
+    - run
+-->
+```cpp
+#include<iostream>
+int main()
+{
+  std::cout << "Hello World!\n";
+}
+```
+However, when we try to compile this, we will get an error
+<!---
+tag: example-2
+-->
+```bash
+this code fence will be replaced
+with the output of the above example.
+```
+````
+If we save this in a file named `slides.md`, then we can run the `snippet-compiler-markdown-render` command
+````
+$ snippet-compiler-markdown-render slides.md
+To write a hello world program in C++, we will need to include the `iostream` header
+<!---
+tag: example-1
+-->
+```cpp
+#include<iostream>
+int main()
+{
+  cout << "Hello World!\n";
+}
+```
+However, when we try to compile this, we will get an error
+<!---
+tag: example-1
+-->
+```bash
+main.cpp: In function ‘int main()’:
+main.cpp:4:3: error: ‘cout’ was not declared in this scope; did you mean ‘std::cout’?
+    4 |   cout << "Hello World!\n";
+      |   ^~~~
+      |   std::cout
+In file included from main.cpp:1:
+/usr/include/c++/9/iostream:61:18: note: ‘std::cout’ declared here
+   61 |   extern ostream cout;  /// Linked to standard output
+      |                  ^~~~
+```
+This is because the `cout` object is in the `std::` namespace, which is easy to forget.
+<!---
+tag: example-2
+snippet-compiler:
+  flags:
+    - run
+-->
+```cpp
+#include<iostream>
+int main()
+{
+  std::cout << "Hello World!\n";
+}
+```
+Now the program and compiles, and if we run it we will get
+the following output:
+<!---
+tag: example-2
+-->
+```bash
+Hello World!
+```
+
+````

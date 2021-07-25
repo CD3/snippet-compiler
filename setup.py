@@ -13,7 +13,7 @@ setup(
   author_email = 'clifton.clark@gmail.com',
   url = 'https://github.com/CD3/snippet-compiler',
   download_url = f'https://github.com/CD3/snippet-compiler/archive/{__version__}.tar.gz',
-  install_requires = ['click','pyparsing'],
+  install_requires = ['click','pyparsing','pyyaml'],
   entry_points='''
   [console_scripts]
   snippet-compiler=snippetcompiler.cli:main

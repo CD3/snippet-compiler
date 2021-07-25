@@ -1,7 +1,32 @@
 # Example 1
 
 The class "Hello World" program written in C++:
-[comment]: <> (Example 1 input)
+<!---
+tag: example-1
+-->
+```cpp
+#include<iostream>
+int main()
+{
+  cout << "Hello World" << std::endl;
+}
+```
+
+Which, when ran, will produce the output
+<!---
+tag: example-1
+-->
+```bash
+output
+```
+
+
+<!---
+tag: example-2
+snippet-compiler:
+  flags:
+    - run
+-->
 ```cpp
 #include<iostream>
 int main()
@@ -11,7 +36,10 @@ int main()
 ```
 
 Which, when ran, will produce the output
-[comment]: <> (Example 1 output)
-```
+<!---
+tag: example-2
+-->
+```bash
+output
 ```
 
