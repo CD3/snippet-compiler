@@ -160,5 +160,12 @@ tag: example-2
 ```bash
 Hello World!
 ```
-
 ````
+This is useful when your writing slides that include code examples.
+
+If you use vim (and why wouldn't you), `snippet-compiler-markdown-render` can actually be used as a "formatter" with `vim-autoformat`. Just put these lines in your vim config:
+```
+let g:formatdef_snippet_compiler_markdown_render = '"snippet-compiler-markdown-render"'
+let g:formatters_markdown = ['snippet_compiler_markdown_render']
+```
+and running :Autoformat will replace all of the output blocks for code examples.
