@@ -34,6 +34,7 @@ class parsers:
     run_modeline = Literal("snippet-compiler.run") + Literal(":") + (true_value("true") | false_value("false"))
     snippet_template_tag = Literal("{snippet}")
     template = snippet_template_tag
+    template_modeline = Literal("snippet-compiler.template") + Literal(":") + restOfLine('template')
 
     class markdown_render:
         html_comment = QuotedString(quoteChar='<!---',endQuoteChar='-->',multiline=True,unquoteResults=False)
@@ -62,37 +63,43 @@ def main(ctx,verbose,compiler_command,run,exec_name,template):
   '''
   Read code snippet from standard input and compile it.
   '''
+
+  sourcecode =  "".join(sys.stdin) 
+
+  # check source code for modelines
+  compiler_command_modelines = parsers.compiler_command_modeline.searchString(sourcecode)
+  for line in compiler_command_modelines:
+      if 'compiler-command' in line:
+          compiler_command = line['compiler-command']
+  exec_name_modelines = parsers.exec_name_modeline.searchString(sourcecode)
+  for line in exec_name_modelines:
+      if 'exec-name' in line:
+          exec_name = line['exec-name']
+  run_modelines = parsers.run_modeline.searchString(sourcecode)
+  for line in run_modelines:
+      if 'true' in line:
+          run = True
+  template_modelines = parsers.template_modeline.searchString(sourcecode)
+  for line in template_modelines:
+      if 'template' in line:
+          template = line['template']
+
   if template:
       template_text = pathlib.Path(template).read_text()
   else:
       template_text = "{snippet}"
 
+    
+  def insert_source_code(toks):
+      toks[0] = sourcecode
+      return toks
+  parsers.template.setParseAction( insert_source_code )
+  rendered_text = parsers.template.transformString(template_text)
 
   with tempfile.TemporaryDirectory() as dir:
+
       os.chdir(dir)
       sourcefile = pathlib.Path("main.cpp")
-      sourcecode =  "".join(sys.stdin) 
-
-      # check source code for modelines
-      compiler_command_modelines = parsers.compiler_command_modeline.searchString(sourcecode)
-      for line in compiler_command_modelines:
-          if 'compiler-command' in line:
-              compiler_command = line['compiler-command']
-      exec_name_modelines = parsers.exec_name_modeline.searchString(sourcecode)
-      for line in exec_name_modelines:
-          if 'exec-name' in line:
-              exec_name = line['exec-name']
-      run_modelines = parsers.run_modeline.searchString(sourcecode)
-      for line in run_modelines:
-          if 'true' in line:
-              run = True
-
-        
-      def insert_source_code(toks):
-          toks[0] = sourcecode
-          return toks
-      parsers.template.setParseAction( insert_source_code )
-      rendered_text = parsers.template.transformString(template_text)
 
       sourcefile.write_text(rendered_text)
       cmd = compiler_command.format(file=str(sourcefile))

@@ -2,7 +2,7 @@
 
 snippet-compiler is a simple command line tool for compiling snippets of code (i.e. C and C++).
 It is useful for quickly compiling some code and optionally running the resulting executable. I
-mainly wrote it to be used with [vim-snippet-compiler](https://github.com/CD3/vim-snippet-compiler).
+wrote it so that I could test code snippets in Markdown slides and README files.
 
 ## Install
 
