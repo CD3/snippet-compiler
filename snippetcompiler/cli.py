@@ -39,11 +39,31 @@ class parsers:
     class markdown_render:
         html_comment = QuotedString(quoteChar='<!---',endQuoteChar='-->',multiline=True,unquoteResults=False)
         code_fence = QuotedString(quoteChar='```',multiline=True,unquoteResults=False)
-        code_with_control_block = html_comment("config") + code_fence("code")
+        code_fense_with_control_block = html_comment("config") + code_fence("code")
 
         snippet_control_block = html_comment
         snippet_code_block = code_fence
-        snippet = code_with_control_block
+        snippet = code_fense_with_control_block
+
+
+class WorkingDirectory(object):
+    def __init__(self, directory):
+        self._dir = directory
+        self._cwd = os.getcwd()
+        self._pwd = self._cwd
+        pathlib.Path(directory).mkdir(parents=True,exist_ok=True)
+
+    def __enter__(self):
+        # print("ENTER: ",self._dir)
+        self._pwd = self._cwd
+        os.chdir(self._dir)
+        self._cwd = os.getcwd()
+        return self
+
+    def __exit__(self, *args):
+        # print("EXIT: ",self._dir)
+        os.chdir(self._pwd)
+        self._cwd = self._pwd
 
 
         
@@ -131,14 +151,15 @@ def run_snippet(config,snippet):
     return output
 
 
-class SnippetBlock:
-    def __init__(self, loc_line_col, control_block, code_block):
-        self.loc_line_col = loc_line_col
+class FensedBlock:
+    def __init__(self, file_loc_line_col, control_block, code_block):
+        self.file_loc_line_col = file_loc_line_col
         self.control_block = control_block
         self.code_block = code_block
 
         beg = 0
         end = len(self.control_block)
+        # remove quotes (if any) from control block and parse it as yaml.
         if self.control_block.startswith(parsers.markdown_render.snippet_control_block.quoteChar):
             beg = parsers.markdown_render.snippet_control_block.quoteCharLen
         if self.control_block.endswith(parsers.markdown_render.snippet_control_block.endQuoteChar):
@@ -147,6 +168,23 @@ class SnippetBlock:
             self.config = yaml.safe_load(self.control_block[beg:end])
         except:
             raise RuntimeError(f"Could not parse the config block on line {self.lineno}. Block must be valid YAML.")
+
+        if "file" in self.config:
+            self.config["tag"] = self.config["file"]
+            self.config["type"] = "file"
+        if "cmd" in self.config:
+            self.config["tag"] = self.config["cmd"]
+            self.config["type"] = "cmd"
+            if "wd" not in self.config:
+                self.config["wd"] = self.markdown_file.parent
+            else:
+                wd = pathlib.Path(self.config['wd'])
+                if wd.is_absolute():
+                    self.config['wd'] = wd
+                else:
+                    self.config['wd'] = self.markdown_file.parent/ wd
+
+             
 
         if "tag" not in self.config:
             raise KeyError(f"No 'tag' element found in snippet control block on line {self.lineno}. A 'tag' element is required to match snippet input and output blocks.")
@@ -164,14 +202,17 @@ class SnippetBlock:
         return self.config["tag"]
 
     @property
+    def markdown_file(self):
+        return pathlib.Path(self.file_loc_line_col[0])
+    @property
     def loc(self):
-        return self.loc_line_col[0]
+        return self.file_loc_line_col[1]
     @property
     def lineno(self):
-        return self.loc_line_col[1]
+        return self.file_loc_line_col[2]
     @property
     def col(self):
-        return self.loc_line_col[2]
+        return self.file_loc_line_col[3]
 
     @property
     def type(self):
@@ -219,6 +260,20 @@ class CodeBlockCollection:
                     input_lines = input_block.code_block.split("\n")
                     output_lines = block.code_block.split("\n")
                     block.code_block = output_lines[0] + "\n" + run_snippet(input_block.config, "\n".join(input_lines[1:-1])) + output_lines[-1]
+                if block.type == "file":
+                    file = block.markdown_file.parent / block.config["file"]
+                    output_lines = block.code_block.split("\n")
+                    block.code_block = output_lines[0] + "\n"
+                    block.code_block += file.read_text()
+                    block.code_block += output_lines[-1]
+                if block.type == "cmd":
+                    with WorkingDirectory(block.config["wd"]) as f:
+                        cmd_output = subprocess.check_output(shlex.split(block.config["cmd"])).decode('utf-8')
+                        output_lines = block.code_block.split("\n")
+                        block.code_block = output_lines[0] + "\n"
+                        block.code_block += cmd_output
+                        block.code_block += output_lines[-1]
+
 
 
     def get_code_block_by_tag(self,tag):
@@ -241,7 +296,8 @@ def markdown_render(ctx,verbose,markdown_file):
         if markdown_file == "-":
           markdown_text =  "".join(sys.stdin) 
         else:
-            markdown_text = pathlib.Path(markdown_file).read_text()
+            markdown_file = pathlib.Path(markdown_file).absolute()
+            markdown_text = markdown_file.read_text()
 
         out = sys.stdout
 
@@ -252,11 +308,11 @@ def markdown_render(ctx,verbose,markdown_file):
         def CollectInputs(text,loc,toks):
             linenumber = lineno(loc,markdown_text)
             colnumber = col(loc,markdown_text)
-            code_block = SnippetBlock( (loc,linenumber,colnumber), toks['config'], toks['code'])
+            code_block = FensedBlock( (markdown_file,loc,linenumber,colnumber), toks['config'], toks['code'])
             code_blocks.add_code_block(code_block)
 
-        parsers.markdown_render.code_with_control_block.setParseAction( CollectInputs )
-        parsers.markdown_render.code_with_control_block.searchString(markdown_text)
+        parsers.markdown_render.code_fense_with_control_block.setParseAction( CollectInputs )
+        parsers.markdown_render.code_fense_with_control_block.searchString(markdown_text)
 
         code_blocks.compile_snippets()
         
@@ -265,8 +321,8 @@ def markdown_render(ctx,verbose,markdown_file):
             toks[1] = "\n"+code_block.code_block_text
             return toks
 
-        parsers.markdown_render.code_with_control_block.setParseAction( ReplaceOutputs )
-        rendered_markdown_text = parsers.markdown_render.code_with_control_block.transformString(markdown_text)
+        parsers.markdown_render.code_fense_with_control_block.setParseAction( ReplaceOutputs )
+        rendered_markdown_text = parsers.markdown_render.code_fense_with_control_block.transformString(markdown_text)
 
         out.write(rendered_markdown_text)
         sys.exit(0)
