@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "snippet-compiler"
+version = "0.0.4"
+description = "A command line tool for compiling snippets of code (i.e. C and C++)."
+authors = ["CD Clark III <clifton.clark@gmail.com>"]
+license = "MIT"
+packages = [{include="snippetcompiler", from="src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = '*'
+pyparsing = '*'
+pyyaml = '*'
+
+[tool.poetry.dev-dependencies]
+pytest = '*'
+cram = '*'
+
+[tool.poetry.scripts]
+snippet-compiler = 'snippetcompiler.cli:main'
+snippet-compiler-markdown-render = 'snippetcompiler.cli:markdown_render'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
