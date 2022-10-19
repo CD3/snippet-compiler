@@ -40,7 +40,7 @@ main.cpp:1:10: fatal error: concepts: No such file or directory
       |          ^~~~~~~~~~
 compilation terminated.
 $
-$ echo -n "#include <concepts>\nint main(){}" | snippet-compiler --compiler-command 'gcc-10 -std=c++20 {file}'
+$ echo -n "#include <concepts>\nint main(){}" | snippet-compiler --compiler-command 'g++-10 -std=c++20 {file}'
 ```
 The `{file}` tag is required to tell the compiler where the name of the temporary file should go in the command line.
 
@@ -286,7 +286,7 @@ can be passed to the command can be given here. Options are listed under the `op
         - run # run the executable after it is compiled
       options : 
         exec-name : a.out
-        compiler-command : ++ 'gcc-10 -std=c++20 {file}' # don't forget the {file} placeholder
+        compiler-command : 'g++-10 -std=c++20 {file}' # don't forget the {file} placeholder
     -->
     This program
     ```cpp
