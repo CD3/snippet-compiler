@@ -64,9 +64,16 @@ hello world
 
 The `snippet-compiler` package now includes some other commands for working with snippets.
 
-`snippet-compiler-markdown-render` is a command that will read a markdown file, look for code snippets (identified by a control block), compile the snippets using `snippet-compiler`,
-and insert the output into the document. Here's an example:
-````
+### `snippet-compiler-markdown-render`
+
+`snippet-compiler-markdown-render` started off as a simple command that would read a markdown file,
+look for code snippets (identified by a control block), compile the snippets
+using `snippet-compiler`, and insert the output into the document. It has since had more features
+added that are useful for writing up example code in READMEs or presentations.
+
+Here's an
+example:
+````markdown
 To write a hello world program in C++, we will need to include the `iostream` header
 <!---
 tag: example-1
@@ -110,6 +117,7 @@ with the output of the above example.
 ```
 ````
 If we save this in a file named `slides.md`, then we can run the `snippet-compiler-markdown-render` command
+
 ````
 $ snippet-compiler-markdown-render slides.md
 To write a hello world program in C++, we will need to include the `iostream` header
@@ -169,3 +177,124 @@ let g:formatdef_snippet_compiler_markdown_render = '"snippet-compiler-markdown-r
 let g:formatters_markdown = ['snippet_compiler_markdown_render']
 ```
 and running :Autoformat will replace all of the output blocks for code examples.
+
+### Control Block Configuration Settings
+
+The control block that appears above the snippet will be parsed as YAML and supports some basic settings
+
+#### `tag`
+
+**Required**
+
+The tag setting is used to match output blocks with input blocks.
+
+
+    The standard library functions and classes live in the `std::` namespace. If you forget to prefix a standard utility like
+    `cout` with `std::`
+    <!---
+    tag : example-1
+    -->
+    ```cpp
+    #include<iostream>
+    int main() {
+      cout << "Hello World";
+    }
+    ```
+    You will get an error like this
+    <!---
+    tag : example-1
+    -->
+    ```bash
+    This will be replaced with the compiler output, which will fail because cout is called without 'std::'
+    ```
+
+#### `type`
+
+**Optional**
+
+The type setting is used to explicitly set a code block as input or output. By default, `snippet-compiler-markdown-render`
+assumes that the first code block with a given tag is the input (the snippet to compile) and the following code blocks with the
+same tag are output (the result of compiling and/or running the snippet). So, if the output needs to preceded the input,
+you can set the type explicitly.
+
+    The standard library functions and classes live in the `std::` namespace. If you see this error,
+    <!---
+    tag : example-1
+    type : out
+    -->
+    ```bash
+    This will be replaced with the compiler output, which will fail because cout is called without 'std::'
+    ```
+    it's probably because you forgot to prefix `cout` with `std::`, like this
+    <!---
+    tag : example-1
+    type : in
+    -->
+    ```cpp
+    #include<iostream>
+    int main() {
+      cout << "Hello World";
+    }
+    ```
+    You will get an error like this
+
+#### `file`
+
+If the `file` setting is given, then the code block will be filled with the contents of the given file. It is used to just insert
+the contents of a file into a code block.
+    
+    <!---
+    file: example.cpp
+    -->
+    ```cpp
+    This will be replaced with the contents of example.cpp
+    ```
+
+#### `cmd`
+
+The `cmd` setting is similar to `file` except that it runs the specified command and replaces the code block with its output.
+It goes without saying, but: **DON'T RENDER UNTRUSTED MARKDOWN FILES**.
+    
+    <!---
+    cmd: echo "hello world"
+    -->
+    ```bash
+    This will be replaced with, well, you know...
+    ```
+
+#### `wd`
+
+`wd` sets the working directory for the `cwd` command. This is useful if you want to run a command in a subdirectory.
+    
+    <!---
+    cmd: pwd
+    wd: subdir
+    -->
+    ```bash
+    This will be replaced with /path/to/current/file/subdir
+    ```
+
+#### `snippet-compiler`
+
+The `snippet-compiler` setting is used to pass options and flags to the `snippet-compiler` command. Any option or flag that
+can be passed to the command can be given here. Options are listed under the `options` dict, flags are listed in the `flags` list.
+
+    <!---
+    tag : example
+    snippet-compiler:
+      flags :
+        - run # run the executable after it is compiled
+      options : 
+        exec-name : a.out
+        compiler-command : ++ 'gcc-10 -std=c++20 {file}' # don't forget the {file} placeholder
+    -->
+    This program
+    ```cpp
+    #include <iostream>
+    int main(){std::cout << "hello world!";}
+    ```
+    outputs this
+    ```bash
+    hello world!
+    ```
+
