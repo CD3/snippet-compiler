@@ -51,12 +51,22 @@ class parsers:
 
     class markdown_render:
         html_comment = QuotedString(
-            quote_char="<!---", end_quote_char="-->", multiline=True, unquote_results=False
+            quote_char="<!---",
+            end_quote_char="-->",
+            multiline=True,
+            unquote_results=False,
         )
         code_fence = QuotedString(
             quote_char="```", multiline=True, unquote_results=False
         )
+        text_fence = QuotedString(
+            quote_char="<!---text-block-begin-->",
+            end_quote_char="<!---text-block-end-->",
+            multiline=True,
+            unquote_results=False,
+        )
         code_fense_with_control_block = html_comment("config") + code_fence("code")
+        text_fense_with_control_block = html_comment("config") + text_fence("text")
 
         snippet_control_block = html_comment
         snippet_code_block = code_fence
@@ -137,8 +147,8 @@ def main(ctx, verbose, compiler_command, run, exec_name, template):
         toks[0] = sourcecode
         return toks
 
-    parsers.template.setParseAction(insert_source_code)
-    rendered_text = parsers.template.transformString(template_text)
+    parsers.template.set_parse_action(insert_source_code)
+    rendered_text = parsers.template.transform_string(template_text)
 
     cwd = pathlib.Path(os.getcwd()).absolute()
     with tempfile.TemporaryDirectory() as dir:
@@ -332,38 +342,75 @@ def markdown_render(ctx, verbose, markdown_file):
         # we will have to render in two passes (like latex)
         # once to extract all of the snippets
         # and again to replace the outputs
-        code_blocks = CodeBlockCollection()
 
         def CollectInputs(text, loc, toks):
             linenumber = lineno(loc, markdown_text)
             colnumber = col(loc, markdown_text)
-            code_block = FensedBlock(
-                (markdown_file, loc, linenumber, colnumber),
-                toks["config"],
-                toks["code"],
-            )
-            code_blocks.add_code_block(code_block)
-
-        parsers.markdown_render.code_fense_with_control_block.setParseAction(
-            CollectInputs
-        )
-        parsers.markdown_render.code_fense_with_control_block.searchString(
-            markdown_text
-        )
-
-        code_blocks.compile_snippets()
+            if "code" in toks:
+                code_block = FensedBlock(
+                    (markdown_file, loc, linenumber, colnumber),
+                    toks["config"],
+                    toks["code"],
+                )
+                code_blocks.add_code_block(code_block)
+            if "text" in toks:
+                # HACK: We originally wrote this utility to allow code snippets
+                #       to be inserted into markdow. But now we want to allow
+                #       non-code snippets to be inserted into the text as well.
+                #       The algorithm is the same, we just have to search for
+                #       a different quote pattern. So, we are just using the
+                #       FensedBlock class to do this, even though the naming
+                #       convension does not make sense...
+                text_block = FensedBlock(
+                    (markdown_file, loc, linenumber, colnumber),
+                    toks["config"],
+                    toks["text"],
+                )
+                code_blocks.add_code_block(text_block)
 
         def ReplaceOutputs(text, loc, toks):
             code_block = code_blocks.get_code_block_by_loc(loc)
             toks[1] = "\n" + code_block.code_block_text
             return toks
 
-        parsers.markdown_render.code_fense_with_control_block.setParseAction(
+        # FIXME: rewrite this to handle fensed code blocks and text blocks
+        # CODE BLOCKS FIRST
+        code_blocks = CodeBlockCollection()
+        parsers.markdown_render.code_fense_with_control_block.set_parse_action(
+            CollectInputs
+        )
+        parsers.markdown_render.code_fense_with_control_block.search_string(
+            markdown_text
+        )
+
+        code_blocks.compile_snippets()
+
+        parsers.markdown_render.code_fense_with_control_block.set_parse_action(
             ReplaceOutputs
         )
         rendered_markdown_text = (
-            parsers.markdown_render.code_fense_with_control_block.transformString(
+            parsers.markdown_render.code_fense_with_control_block.transform_string(
                 markdown_text
+            )
+        )
+
+        # TEXT BLOCKS NEXT
+        code_blocks = CodeBlockCollection()
+        parsers.markdown_render.text_fense_with_control_block.set_parse_action(
+            CollectInputs
+        )
+        parsers.markdown_render.text_fense_with_control_block.search_string(
+            rendered_markdown_text
+        )
+
+        code_blocks.compile_snippets()
+
+        parsers.markdown_render.text_fense_with_control_block.set_parse_action(
+            ReplaceOutputs
+        )
+        rendered_markdown_text = (
+            parsers.markdown_render.text_fense_with_control_block.transform_string(
+                rendered_markdown_text
             )
         )
 

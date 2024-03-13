@@ -46,3 +46,51 @@
   $ echo $?
   0
 
+  $ cat << 'EOF' > test-slides.md 
+  > begin
+  > <!---
+  > tag: example 1
+  > cmd: echo "hello world"
+  > -->
+  > ```bash
+  > will be replaced
+  > ```
+  > end
+  > EOF
+  $ snippet-compiler-markdown-render test-slides.md
+  begin
+  <!---
+  tag: example 1
+  cmd: echo "hello world"
+  -->
+  ```bash
+  hello world
+  ```
+  end
+  $ echo $?
+  0
+
+
+  $ cat << 'EOF' > test-slides.md 
+  > begin
+  > <!---
+  > tag: example 1
+  > cmd: echo "hello world"
+  > -->
+  > <!---text-block-begin-->
+  > will be replaced
+  > <!---text-block-end-->
+  > end
+  > EOF
+  $ snippet-compiler-markdown-render test-slides.md
+  begin
+  <!---
+  tag: example 1
+  cmd: echo "hello world"
+  -->
+  <!---text-block-begin-->
+  hello world
+  <!---text-block-end-->
+  end
+  $ echo $?
+  0
